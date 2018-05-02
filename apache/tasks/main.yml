@@ -1,0 +1,34 @@
+---
+# tasks file for apache
+ - name: Install httpd
+   yum: 
+    name: httpd
+    state: present
+    
+ - name: Enable service httpd
+   service:
+     name: httpd
+     enabled: yes
+
+ - name: restart httpd
+   template: src=httpd.conf.j2 dest=/etc/httpd/conf/httpd.conf owner=root group=root mode=0600
+   notify: restart httpd
+
+ - name: Replace the configuration file for splunk
+   template: src=web.conf.j2 dest=/opt/splunk/etc/system/local/web.conf owner=root group=root mode=0600
+   notify: restart httpd
+
+ - name: add configurations to httpd.conf
+   blockinfile:
+     path: /etc/httpd/conf/httpd.conf
+     block: |
+      Listen 80
+      <VirtualHost *:80>
+      ServerName localhost
+      Redirect permanent / https://127.0.0.1/
+      </VirtualHost>
+   notify: restart httpd
+
+ - name: restart splunk
+   shell: /opt/splunk/bin/splunk restart | su splunk
+   ignore_errors: true
